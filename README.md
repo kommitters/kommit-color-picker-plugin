@@ -2,10 +2,6 @@
 
 Camunda Modeler plugin that adds a flexible color picker to the toolbar, allowing you to easily apply preset colors to your BPMN elements.
 
-
-
-![Enhanced color picker plugin for the Camunda Modeler](docs/img/enhanced-color-picker.png)
-
 ![Stability Badge](https://img.shields.io/badge/stability-stable-green.svg)
 ![](https://badgen.net/badge/Editor.js/v2.0/blue)
 [![Coverage Status](https://coveralls.io/repos/github/kommitters/editorjs-undo/badge.svg)](https://coveralls.io/github/kommitters/editorjs-undo)
@@ -16,6 +12,8 @@ Camunda Modeler plugin that adds a flexible color picker to the toolbar, allowin
 ## Description
 
 This plugin provides a floating, draggable color picker panel that enhances the modeling experience by offering a quick way to style elements. It is particularly useful for creating heatmaps, highlighting process flows, or simply organizing your diagram with visual cues.
+
+![Enhanced color picker plugin for the Camunda Modeler](docs/img/enhanced-color-picker.png)
 
 ## Features
 
