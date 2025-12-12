@@ -1,7 +1,7 @@
 {
-    "name": "kommit-color-picker-plugin",
+    "name": "@kommitters/camunda-modeler-plugin-enhanced-color-picker",
     "version": "0.1.0",
-    "description": "Kommit Color Picker Plugin for the Camunda Modeler",
+    "description": "Enhanced color picker plugin for the Camunda Modeler",
     "main": "index.js",
     "scripts": {
         "client": "webpack",
@@ -14,6 +14,10 @@
         "color",
         "preset"
     ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kommitters/camunda-modeler-plugin-enhanced-color-picker.git"
+    },
     "author": "Kommit",
     "license": "MIT",
     "devDependencies": {

@@ -102,7 +102,7 @@ const COLORS = [
     { label: 'Dark Magenta 3', fill: '#4C1130' }
 ];
 
-class KommitColorPickerPlugin {
+class EnhancedColorPickerPlugin {
     constructor(eventBus, bpmnRules, editorActions, canvas, commandStack, bpmnFactory) {
         this.commandStack = commandStack;
         this.bpmnFactory = bpmnFactory;
@@ -125,7 +125,7 @@ class KommitColorPickerPlugin {
 
     loadCustomColors() {
         try {
-            const stored = localStorage.getItem('camunda-modeler-plugin-preset-colors-custom');
+            const stored = localStorage.getItem('camunda-modeler-plugin-enhanced-color-picker');
             return stored ? JSON.parse(stored) : [];
         } catch (e) {
             console.error('Failed to load custom colors', e);
@@ -137,7 +137,7 @@ class KommitColorPickerPlugin {
         try {
             // Unify case to avoid duplicates like #ffffff vs #FFFFFF
             const uniqueColors = [...new Set(this.customColors.map(c => c.toLowerCase()))];
-            localStorage.setItem('camunda-modeler-plugin-preset-colors-custom', JSON.stringify(uniqueColors));
+            localStorage.setItem('camunda-modeler-plugin-enhanced-color-picker', JSON.stringify(uniqueColors));
 
             // Reload into memory to ensure consistency
             this.customColors = uniqueColors;
@@ -163,13 +163,35 @@ class KommitColorPickerPlugin {
         this.isActive = false;
     }
 
-    createColorButton(fill, label) {
+    createColorButton(fill, label, isCustom = false) {
         // Ensure hex includes #
         if (fill && !fill.startsWith('#')) {
             fill = '#' + fill;
         }
 
-        const button = domify(`<div class="color-button" style="background-color: ${fill}" title="${label || fill}"></div>`);
+        const button = domify(`<div class="color-button ${isCustom ? 'custom-color-item' : ''}" style="background-color: ${fill}" title="${label || fill}"></div>`);
+
+        if (isCustom) {
+            const deleteIcon = domify(`
+                <div class="delete-color-action" title="Remove Color">
+                    <svg viewBox="0 0 24 24" width="10" height="10"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </div>
+            `);
+
+            deleteIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                // Remove from state
+                this.customColors = this.customColors.filter(c => c.toLowerCase() !== fill.toLowerCase());
+                this.saveCustomColors();
+
+                // Remove from DOM
+                button.remove();
+            });
+
+            button.appendChild(deleteIcon);
+        }
 
         button.addEventListener('click', () => {
             if (!this.selectedElement) return;
@@ -181,8 +203,8 @@ class KommitColorPickerPlugin {
 
     addPicker(container) {
         const markup = `
-      <div class="kommit-color-picker-container">
-        <div class="picker-header">Color Picker By Kommit</div>
+      <div class="enhanced-color-picker-container">
+        <div class="picker-header">Enhanced Color Picker</div>
         <div class="picker-toolbar">
           <button class="mode-button ${this.activeModes.has('fill') ? 'active' : ''}" data-mode="fill" title="Background Color">
             <div class="icon-fill"></div>
@@ -227,21 +249,28 @@ class KommitColorPickerPlugin {
 
         // Custom Colors
         this.customColors.forEach((colorFill) => {
-            grid.appendChild(this.createColorButton(colorFill, 'Custom Color'));
+            grid.appendChild(this.createColorButton(colorFill, 'Custom Color', true));
         });
 
         // Custom Color Picker Button
-        const customButton = domify('<div class="color-button custom-color-button" title="Custom Color"></div>');
+        const customButton = domify(`
+            <div class="color-button custom-color-button" title="Custom Color">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </div>
+        `);
         grid.appendChild(customButton);
 
         // Reset Button
-        const resetButton = domify('<div class="color-button reset-button" title="Reset Custom Colors"></div>');
+        const resetButton = domify(`
+            <div class="color-button reset-button" title="Reset Custom Colors">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </div>
+        `);
 
         resetButton.onclick = (e) => {
             e.stopPropagation();
             e.preventDefault();
 
-            // Wrap in setTimeout to avoid blocking event loop causing weird focus loss behavior
             setTimeout(() => {
                 if (confirm('Remove all custom colors?')) {
                     localStorage.removeItem('camunda-modeler-plugin-preset-colors-custom');
@@ -300,7 +329,7 @@ class KommitColorPickerPlugin {
 
                 // Append new button BEFORE the custom picker button
                 // grid.lastChild is the customButton
-                const newBtn = this.createColorButton(hexColor, 'Custom Color');
+                const newBtn = this.createColorButton(hexColor, 'Custom Color', true);
                 grid.insertBefore(newBtn, customButton);
             }
 
@@ -313,6 +342,12 @@ class KommitColorPickerPlugin {
 
     applyColor(color) {
         if (!this.selectedElement) return;
+
+        // If we are changing stroke but NOT text, we want to pin the current text color
+        // so it doesn't implicitly change to the new stroke color.
+        if (this.activeModes.has('stroke') && !this.activeModes.has('text')) {
+            this.preserveTextColorIfNeeded();
+        }
 
         const colorData = {};
 
@@ -331,9 +366,46 @@ class KommitColorPickerPlugin {
             });
         }
 
-        // 2. Handle Text (potentially separate)
         if (this.activeModes.has('text')) {
             this.handleTextColoring({ fill: color });
+        }
+    }
+
+    preserveTextColorIfNeeded() {
+        const element = this.selectedElement;
+        const di = getDi(element);
+
+        if (!di) return;
+
+        if (element.labelTarget) {
+            return;
+        }
+
+        if (di.label) {
+            if (di.label.color) return;
+
+            let currentStroke = di.stroke || 'black';
+
+            this.commandStack.execute('element.updateModdleProperties', {
+                element: element,
+                moddleElement: di.label,
+                properties: { color: currentStroke }
+            });
+
+        } else {
+            const currentStroke = di.stroke || 'black';
+
+            const newLabel = this.bpmnFactory.create('bpmndi:BPMNLabel', {
+                bounds: this.bpmnFactory.create('dc:Bounds')
+            });
+            newLabel.color = currentStroke;
+
+            this.commandStack.execute('element.updateProperties', {
+                element: element,
+                properties: {
+                    di: { label: newLabel }
+                }
+            });
         }
     }
 
@@ -409,9 +481,9 @@ class KommitColorPickerPlugin {
     }
 }
 
-KommitColorPickerPlugin.$inject = ['eventBus', 'bpmnRules', 'editorActions', 'canvas', 'commandStack', 'bpmnFactory'];
+EnhancedColorPickerPlugin.$inject = ['eventBus', 'bpmnRules', 'editorActions', 'canvas', 'commandStack', 'bpmnFactory'];
 
 module.exports = {
-    __init__: ['kommitColorPickerPlugin'],
-    kommitColorPickerPlugin: ['type', KommitColorPickerPlugin]
+    __init__: ['enhancedColorPickerPlugin'],
+    enhancedColorPickerPlugin: ['type', EnhancedColorPickerPlugin]
 };

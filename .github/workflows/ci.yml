@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+      - 'v*.[0-9]'
+  pull_request:
+
+permissions: # added using https://github.com/step-security/secure-workflows
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            coveralls.io:443
+            github.com:443
+            nodejs.org:443
+            registry.yarnpkg.com:443
+            objects.githubusercontent.com:443
+      

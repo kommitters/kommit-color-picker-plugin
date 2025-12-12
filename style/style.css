@@ -1,4 +1,4 @@
-.kommit-color-picker-container {
+.enhanced-color-picker-container {
     position: absolute;
     top: 20px;
     left: 80px;
@@ -121,51 +121,69 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.custom-color-button {
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.custom-color-button::after {
-    content: '+';
-    font-size: 14px;
-    color: #5f6368;
-    font-weight: bold;
-    line-height: 1;
-    margin-top: -2px;
-}
-
-
-.custom-color-button:hover::after {
-    color: #202124;
-}
-
+.custom-color-button,
 .reset-button {
     background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+}
+
+.custom-color-button svg,
+.reset-button svg {
+    fill: #5f6368;
+    transition: fill 0.2s;
+    width: 10px;
+    height: 10px;
+    display: block;
+    /* Removes any line-height weirdness */
+}
+
+.custom-color-button:hover svg {
+    fill: #202124;
+}
+
+.reset-button:hover svg {
+    fill: #d93025;
+}
+
+.custom-color-item {
     position: relative;
-    overflow: hidden;
 }
 
-.reset-button::after {
-    content: '×';
-    /* or use an SVG icon */
-    font-size: 16px;
-    color: #5f6368;
-    font-weight: bold;
-    line-height: 1;
-    margin-top: -2px;
+.delete-color-action {
+    display: none;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    border: 1px solid #dadce0;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
 }
 
-.reset-button:hover::after {
-    color: #d93025;
-    /* Red for destructive action */
+.delete-color-action svg {
+    fill: #5f6368;
+    width: 8px;
+    height: 8px;
+}
+
+.custom-color-item:hover .delete-color-action {
+    display: flex;
+}
+
+.delete-color-action:hover {
+    background: #f1f3f4;
+    border-color: #d93025;
+}
+
+.delete-color-action:hover svg {
+    fill: #d93025;
 }
 
 
@@ -399,7 +417,7 @@
 }
 
 .pcr-app .pcr-interaction .pcr-save {
-    background: #1967d2;
+    background: #6bbd57;
     border-radius: 4px;
     font-weight: 500;
 }

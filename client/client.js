@@ -1,4 +1,4 @@
 const { registerBpmnJSPlugin } = require('camunda-modeler-plugin-helpers');
-const KommitColorPickerPlugin = require('./KommitColorPickerPlugin');
+const EnhancedColorPickerPlugin = require('./EnhancedColorPickerPlugin');
 
-registerBpmnJSPlugin(KommitColorPickerPlugin);
+registerBpmnJSPlugin(EnhancedColorPickerPlugin);
