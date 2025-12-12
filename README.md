@@ -3,10 +3,9 @@
 Camunda Modeler plugin that adds a flexible color picker to the toolbar, allowing you to easily apply preset colors to your BPMN elements.
 
 ![Stability Badge](https://img.shields.io/badge/stability-stable-green.svg)
-![](https://badgen.net/badge/Editor.js/v2.0/blue)
-[![Coverage Status](https://coveralls.io/repos/github/kommitters/editorjs-undo/badge.svg)](https://coveralls.io/github/kommitters/editorjs-undo)
+[![Coverage Status](https://coveralls.io/repos/github/kommitters/camunda-modeler-plugin-enhanced-color-picker/badge.svg)](https://coveralls.io/github/kommitters/camunda-modeler-plugin-enhanced-color-picker)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/6471/badge)](https://bestpractices.coreinfrastructure.org/projects/6471)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kommitters/editorjs-undo/badge)](https://api.securityscorecards.dev/projects/github.com/kommitters/editorjs-undo)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kommitters/camunda-modeler-plugin-enhanced-color-picker/badge)](https://api.securityscorecards.dev/projects/github.com/kommitters/camunda-modeler-plugin-enhanced-color-picker)
 
 
 ## Description
