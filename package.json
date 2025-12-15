@@ -5,7 +5,8 @@
     "main": "index.js",
     "scripts": {
         "client": "webpack",
-        "dev": "webpack -w"
+        "dev": "webpack -w",
+        "test": "cross-env CHROME_BIN=$(which google-chrome || which chromium || which google-chrome-stable) karma start"
     },
     "keywords": [
         "camunda",
@@ -21,10 +22,29 @@
     "author": "Kommit",
     "license": "MIT",
     "devDependencies": {
+        "@babel/core": "^7.28.5",
+        "@babel/preset-env": "^7.28.5",
+        "babel-loader": "^10.0.0",
+        "babel-plugin-istanbul": "^7.0.1",
         "bpmn-js": "^9.4.0",
         "camunda-modeler-plugin-helpers": "^1.7.0",
+        "chai": "^4.5.0",
+        "cross-env": "^10.1.0",
+        "css-loader": "^7.1.2",
         "inherits": "^2.0.3",
+        "karma": "^6.4.4",
+        "karma-chai": "^0.1.0",
+        "karma-chrome-launcher": "^3.2.0",
+        "karma-coverage": "^2.2.1",
+        "karma-mocha": "^2.0.1",
+        "karma-webpack": "^5.0.1",
         "min-dom": "^0.2.0",
+        "mocha": "^11.7.5",
+        "puppeteer": "^24.33.0",
+        "raw-loader": "^4.0.2",
+        "sinon": "^21.0.0",
+        "sinon-chai": "^3.7.0",
+        "style-loader": "^4.0.0",
         "webpack": "^5.103.0",
         "webpack-cli": "^4.10.0"
     },

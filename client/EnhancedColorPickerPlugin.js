@@ -124,25 +124,55 @@ class EnhancedColorPickerPlugin {
     }
 
     loadCustomColors() {
+        const storageKey = 'camunda-modeler-plugin-enhanced-color-picker';
+
         try {
-            const stored = localStorage.getItem('camunda-modeler-plugin-enhanced-color-picker');
-            return stored ? JSON.parse(stored) : [];
+            const stored = localStorage.getItem(storageKey);
+
+            if (!stored) {
+                return [];
+            }
+
+            const parsed = JSON.parse(stored);
+
+            // We expect an array of hex strings; anything else is treated as invalid.
+            if (!Array.isArray(parsed)) {
+                localStorage.removeItem(storageKey);
+                return [];
+            }
+
+            return parsed
+                .filter(c => typeof c === 'string')
+                .map(c => (c.startsWith('#') ? c : ('#' + c)))
+                .map(c => c.toLowerCase());
+
         } catch (e) {
-            console.error('Failed to load custom colors', e);
+            // Clean up invalid persisted state to avoid repeated parse errors.
+            try {
+                localStorage.removeItem(storageKey);
+            } catch (_) {
+                // ignore
+            }
+
+            // Avoid printing the raw exception (and stack) to keep console noise down.
+            console.error('Failed to load custom colors');
             return [];
         }
     }
 
     saveCustomColors() {
+        const storageKey = 'camunda-modeler-plugin-enhanced-color-picker';
+
         try {
             // Unify case to avoid duplicates like #ffffff vs #FFFFFF
             const uniqueColors = [...new Set(this.customColors.map(c => c.toLowerCase()))];
-            localStorage.setItem('camunda-modeler-plugin-enhanced-color-picker', JSON.stringify(uniqueColors));
+            localStorage.setItem(storageKey, JSON.stringify(uniqueColors));
 
             // Reload into memory to ensure consistency
             this.customColors = uniqueColors;
         } catch (e) {
-            console.error('Failed to save custom colors', e);
+            // Avoid printing the raw exception (and stack) to keep console noise down.
+            console.error('Failed to save custom colors');
         }
     }
 
@@ -267,36 +297,15 @@ class EnhancedColorPickerPlugin {
             </div>
         `);
 
-        resetButton.onclick = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-
-            setTimeout(() => {
-                if (confirm('Remove all custom colors?')) {
-                    localStorage.removeItem('camunda-modeler-plugin-preset-colors-custom');
-                    this.customColors = [];
-
-                    let separatorFound = false;
-                    const children = Array.from(grid.children);
-                    children.forEach(child => {
-                        if (child.classList.contains('separator')) {
-                            separatorFound = true;
-                            return; // keep separator
-                        }
-                        if (separatorFound) {
-                            if (!child.classList.contains('custom-color-button') && !child.classList.contains('reset-button')) {
-                                grid.removeChild(child);
-                            }
-                        }
-                    });
-                }
-            }, 10);
-        };
+        resetButton.onclick = this.handleResetCustomColors.bind(this, grid);
 
         grid.appendChild(resetButton);
 
         // @simonwep/pickr plugin
-        const pickr = Pickr.create({
+        // Allow mocking for tests
+        const PickrCtor = this.Pickr || Pickr;
+
+        const pickr = PickrCtor.create({
             el: customButton,
             theme: 'monolith',
             useAsButton: true,
@@ -316,28 +325,55 @@ class EnhancedColorPickerPlugin {
             }
         });
 
-        pickr.on('save', (color, instance) => {
-            const hexColor = color.toHEXA().toString();
-
-            // Apply immediately
-            this.applyColor(hexColor);
-
-            // Save if not exists
-            if (!this.customColors.includes(hexColor.toLowerCase())) {
-                this.customColors.push(hexColor);
-                this.saveCustomColors();
-
-                // Append new button BEFORE the custom picker button
-                // grid.lastChild is the customButton
-                const newBtn = this.createColorButton(hexColor, 'Custom Color', true);
-                grid.insertBefore(newBtn, customButton);
-            }
-
-            instance.hide();
-        });
+        pickr.on('save', (color, instance) => this.handlePickrSave(color, instance, grid, customButton));
 
         container.appendChild(this.pickerContainer);
         this.makeDraggable(this.pickerContainer);
+    }
+
+    handleResetCustomColors(grid, e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        setTimeout(() => {
+            if (confirm('Remove all custom colors?')) {
+                localStorage.removeItem('camunda-modeler-plugin-enhanced-color-picker');
+                this.customColors = [];
+
+                let separatorFound = false;
+                const children = Array.from(grid.children);
+                children.forEach(child => {
+                    if (child.classList.contains('separator')) {
+                        separatorFound = true;
+                        return; // keep separator
+                    }
+                    if (separatorFound) {
+                        if (!child.classList.contains('custom-color-button') && !child.classList.contains('reset-button')) {
+                            grid.removeChild(child);
+                        }
+                    }
+                });
+            }
+        }, 10);
+    }
+
+    handlePickrSave(color, instance, grid, customButton) {
+        const hexColor = color.toHEXA().toString();
+
+        // Apply immediately
+        this.applyColor(hexColor);
+
+        // Save if not exists
+        if (!this.customColors.includes(hexColor.toLowerCase())) {
+            this.customColors.push(hexColor);
+            this.saveCustomColors();
+
+            // Append new button BEFORE the custom picker button
+            const newBtn = this.createColorButton(hexColor, 'Custom Color', true);
+            grid.insertBefore(newBtn, customButton);
+        }
+
+        instance.hide();
     }
 
     applyColor(color) {
@@ -450,34 +486,32 @@ class EnhancedColorPickerPlugin {
 
     makeDraggable(element) {
         const header = element.querySelector('.picker-header');
-        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        header.onmousedown = this.handleDragMouseDown.bind(this, element);
+    }
 
-        header.onmousedown = dragMouseDown;
+    handleDragMouseDown(element, e) {
+        e = e || window.event;
+        e.preventDefault();
+        this.pos3 = e.clientX;
+        this.pos4 = e.clientY;
+        document.onmouseup = this.handleCloseDragElement.bind(this);
+        document.onmousemove = this.handleElementDrag.bind(this, element);
+    }
 
-        function dragMouseDown(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            document.onmousemove = elementDrag;
-        }
+    handleElementDrag(element, e) {
+        e = e || window.event;
+        e.preventDefault();
+        this.pos1 = this.pos3 - e.clientX;
+        this.pos2 = this.pos4 - e.clientY;
+        this.pos3 = e.clientX;
+        this.pos4 = e.clientY;
+        element.style.top = (element.offsetTop - this.pos2) + "px";
+        element.style.left = (element.offsetLeft - this.pos1) + "px";
+    }
 
-        function elementDrag(e) {
-            e = e || window.event;
-            e.preventDefault();
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            element.style.top = (element.offsetTop - pos2) + "px";
-            element.style.left = (element.offsetLeft - pos1) + "px";
-        }
-
-        function closeDragElement() {
-            document.onmouseup = null;
-            document.onmousemove = null;
-        }
+    handleCloseDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
     }
 }
 
